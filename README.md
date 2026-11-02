@@ -97,3 +97,6 @@ for `+`, or one of `escape`, `return`, `tab`, `space`, `delete`,
 ## License
 
 MIT, see [LICENSE](LICENSE).
+
+SpaceKeys is not affiliated with or endorsed by 3Dconnexion. 3Dconnexion
+and SpaceMouse are trademarks of 3Dconnexion.
