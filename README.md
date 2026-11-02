@@ -1,9 +1,12 @@
 # SpaceKeys
 
-A menu bar app that maps the buttons of a 3Dconnexion SpaceMouse Pro to
+A menu bar app that maps the buttons of a
+[3Dconnexion](https://3dconnexion.com/)
+[SpaceMouse Pro](https://3dconnexion.com/us/product/spacemouse-pro/) to
 keyboard shortcuts on macOS, without 3DxWare. It reads only the button
 reports and opens the device without seizing it, so a motion driver such as
-Space Glider keeps working alongside it.
+[Space Glider](https://apps.metaebene.me/en/space-glider) keeps working
+alongside it.
 
 ## Install
 
