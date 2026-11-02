@@ -50,6 +50,12 @@ button, or for an app, returns it to the All Apps mapping.
 Pressing a SpaceMouse button while Settings is open lights up its row.
 While a field is recording, SpaceMouse buttons send nothing.
 
+An app with its own SpaceMouse support can take the device exclusively
+while it is in front; Kugelblitz does this through its Space Juggler
+helper. No button reaches SpaceKeys then, and the menu says "in use by"
+that app until it lets go. Every button press is logged with the app in
+front and what was sent (`make logs`).
+
 Characters follow the active keyboard layout, so ⌘Z is the key labelled Z
 on QWERTZ too. A shortcut stays down as long as the button does, but macOS
 does not repeat it.

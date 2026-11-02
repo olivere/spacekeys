@@ -24,6 +24,9 @@ final class AppModel {
     private(set) var configError: String?
     private(set) var saveError: String?
     private(set) var deviceName: String?
+    /// The app holding the SpaceMouse exclusively. Its buttons do nothing
+    /// here until that app lets go, typically when it leaves the front.
+    private(set) var deviceOwner: String?
     private(set) var deviceError: String?
     private(set) var trusted = AXIsProcessTrusted()
     private(set) var pressed: Set<DeviceButton> = []
@@ -78,8 +81,28 @@ final class AppModel {
             } catch {
                 deviceError = "\(error)"
                 log("\(error)")
+                return
+            }
+            // Nothing announces a seize, so look every two seconds.
+            while true {
+                updateDeviceOwner()
+                try? await Task.sleep(for: .seconds(2))
             }
         }
+    }
+
+    private func updateDeviceOwner() {
+        let owner = mouse.exclusiveOwner().map(Self.name(ofProcess:))
+        guard owner != deviceOwner else { return }
+        log(owner.map { "SpaceMouse in use by \($0)" } ?? "SpaceMouse available again")
+        deviceOwner = owner
+    }
+
+    private static func name(ofProcess pid: Int32) -> String {
+        let app = NSRunningApplication(processIdentifier: pid)
+        return app?.executableURL.flatMap { displayName(forExecutablePath: $0.path) }
+            ?? app?.localizedName
+            ?? "process \(pid)"
     }
 
     func releaseAll() {
@@ -93,11 +116,18 @@ final class AppModel {
             return
         }
         pressed.insert(button)
-        guard recorder == nil else { return }
+        guard recorder == nil else {
+            log("\(button.rawValue): ignored while a shortcut field records")
+            return
+        }
         let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        guard let action = config.action(for: button, app: bundleID) else { return }
+        guard let action = config.action(for: button, app: bundleID) else {
+            log("\(button.rawValue) in \(bundleID ?? "unknown app"): not mapped")
+            return
+        }
         do {
-            try poster.press(button, action: action)
+            let posted = try poster.press(button, action: action)
+            log("\(button.rawValue) in \(bundleID ?? "unknown app"): \(action.configString), \(posted)")
         } catch {
             log("\(button.rawValue): \(error)")
         }

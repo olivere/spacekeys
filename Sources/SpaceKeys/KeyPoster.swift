@@ -25,7 +25,8 @@ final class KeyPoster {
         self.source = source
     }
 
-    func press(_ button: DeviceButton, action: Action) throws {
+    /// Returns what was posted, for the log.
+    func press(_ button: DeviceButton, action: Action) throws -> String {
         if sent[button] != nil { release(button) }
         switch action {
         case .modifier(let modifier):
@@ -34,10 +35,13 @@ final class KeyPoster {
                 post(flagsChangedFor: single)
             }
             sent[button] = Sent(keyCode: 0, modifiers: [], heldModifier: modifier)
+            return "holding \(held.symbols)"
         case .shortcut(let modifiers, let key):
             let keyCode = try KeyboardLayout.keyCode(for: key)
-            post(keyCode: keyCode, down: true, modifiers: modifiers.union(held))
+            let all = modifiers.union(held)
+            post(keyCode: keyCode, down: true, modifiers: all)
             sent[button] = Sent(keyCode: keyCode, modifiers: modifiers, heldModifier: nil)
+            return "key code 0x\(String(keyCode, radix: 16)) with flags 0x\(String(flags(all).rawValue, radix: 16))"
         }
     }
 

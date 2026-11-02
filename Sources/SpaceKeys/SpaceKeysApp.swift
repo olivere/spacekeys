@@ -58,6 +58,9 @@ struct MenuContent: View {
             Button("Open Accessibility Settings…") { model.openAccessibilitySettings() }
         } else if let error = model.deviceError {
             Text(error)
+        } else if let name = model.deviceName, let owner = model.deviceOwner {
+            Text("\(name) in use by \(owner)")
+            Text("Buttons work again when \(owner) lets go of it")
         } else if let name = model.deviceName {
             Text("\(name) connected")
         } else {

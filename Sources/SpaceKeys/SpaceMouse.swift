@@ -55,6 +55,46 @@ final class SpaceMouse {
         }
     }
 
+    /// The pid of a process holding a SpaceMouse exclusively, so that no
+    /// button reports reach us, or nil.
+    ///
+    /// IOKit has no API for this. It reads the "ClientSeized" flag from the
+    /// "DebugState" that each IOHIDLibUserClient publishes in the I/O
+    /// Registry; if a macOS release drops that property, this returns nil.
+    func exclusiveOwner() -> Int32? {
+        guard let devices = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> else { return nil }
+        for device in devices {
+            let clients = Self.clients(of: IOHIDDeviceGetService(device))
+            if let owner = SpaceKeysCore.exclusiveOwner(of: clients, me: getpid()) {
+                return owner
+            }
+        }
+        return nil
+    }
+
+    private static func clients(of service: io_service_t) -> [HIDClient] {
+        var iterator: io_iterator_t = 0
+        guard IORegistryEntryGetChildIterator(service, kIOServicePlane, &iterator) == KERN_SUCCESS else { return [] }
+        defer { IOObjectRelease(iterator) }
+
+        var clients: [HIDClient] = []
+        while case let child = IOIteratorNext(iterator), child != 0 {
+            defer { IOObjectRelease(child) }
+            guard IOObjectConformsTo(child, "IOHIDLibUserClient") != 0,
+                  let creator = property(child, "IOUserClientCreator") as? String,
+                  let pid = HIDClient.pid(fromCreator: creator),
+                  let state = property(child, "DebugState") as? [String: Any],
+                  let seized = state["ClientSeized"] as? Bool
+            else { continue }
+            clients.append(HIDClient(pid: pid, seizedOut: seized))
+        }
+        return clients
+    }
+
+    private static func property(_ entry: io_registry_entry_t, _ key: String) -> Any? {
+        IORegistryEntryCreateCFProperty(entry, key as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue()
+    }
+
     struct HIDError: Error, CustomStringConvertible {
         let code: IOReturn
         var description: String { "cannot open the SpaceMouse (IOHIDManagerOpen 0x\(String(UInt32(bitPattern: code), radix: 16)))" }
