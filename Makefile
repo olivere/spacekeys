@@ -7,8 +7,17 @@ IDENTITY ?= -
 
 .PHONY: build app test install uninstall logs
 
+# macOS draws an app in the current system style only if the binary
+# records the SDK it was built with. SwiftPM's default build system writes
+# the deployment target there instead, so the linker gets both explicitly.
+# MACOS_MIN must match platforms in Package.swift and LSMinimumSystemVersion.
+MACOS_MIN := 15.0
+SDK_VERSION = $(shell xcrun --sdk macosx --show-sdk-version)
+
 build:
-	swift build -c release
+	swift build -c release \
+		-Xlinker -platform_version -Xlinker macos \
+		-Xlinker $(MACOS_MIN) -Xlinker $(SDK_VERSION)
 
 test:
 	swift test
