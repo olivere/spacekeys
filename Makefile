@@ -58,8 +58,8 @@ logs:
 # A universal, notarized DMG of the checked-out commit. Notarization needs
 # a secure timestamp on every signature, unlike the local `app` build.
 release:
-	@test -n "$(VERSION)" || { echo "usage: make release VERSION=0.1.0" >&2; exit 1; }
-	@test "$(IDENTITY)" != "-" || { echo "release needs a Developer ID IDENTITY in local.mk" >&2; exit 1; }
+	@echo "$(VERSION)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "usage: make release VERSION=0.1.0" >&2; exit 1; }
+	@case "$(IDENTITY)" in "Developer ID Application:"*) ;; *) echo "release needs a Developer ID Application IDENTITY in local.mk" >&2; exit 1;; esac
 	@test -z "$$(git status --porcelain)" || { echo "release needs a clean checkout" >&2; exit 1; }
 	swift build -c release --arch arm64 --arch x86_64 $(LINK_FLAGS)
 	rm -rf $(RELEASE)
@@ -77,8 +77,14 @@ release:
 	cd $(RELEASE) && shasum -a 256 $(notdir $(DMG)) > $(notdir $(DMG)).sha256
 	git rev-parse HEAD > $(RELEASE)/commit
 
-# Tags the commit the DMG was built from, which must be on GitHub.
+# Tags the commit the DMG was built from, which must be on GitHub. GitHub
+# ignores --target when the tag exists, so an existing tag must already
+# point at that commit.
 publish:
-	@test -f $(DMG).sha256 || { echo "run make release VERSION=$(VERSION) first" >&2; exit 1; }
+	@test -n "$(VERSION)" || { echo "usage: make publish VERSION=0.1.0" >&2; exit 1; }
+	@test -f $(DMG).sha256 -a -s $(RELEASE)/commit || { echo "run make release VERSION=$(VERSION) first" >&2; exit 1; }
+	@tagged=$$(git ls-remote --tags origin refs/tags/v$(VERSION) | cut -f1); \
+		test -z "$$tagged" -o "$$tagged" = "$$(cat $(RELEASE)/commit)" || \
+		{ echo "v$(VERSION) on origin is $$tagged, but the DMG was built from $$(cat $(RELEASE)/commit)" >&2; exit 1; }
 	gh release create v$(VERSION) $(DMG) $(DMG).sha256 \
 		--target $$(cat $(RELEASE)/commit) --title v$(VERSION) --generate-notes
