@@ -94,6 +94,28 @@ for `+`, or one of `escape`, `return`, `tab`, `space`, `delete`,
 `forwarddelete`, `home`, `end`, `pageup`, `pagedown`, `left`, `right`,
 `up`, `down`, `f1`–`f20`.
 
+## Releases
+
+`make release VERSION=0.1.0` builds a universal app from a clean checkout,
+signs it with `IDENTITY`, and wraps it in a DMG. It then has Apple notarize
+the DMG and staples the ticket, so Gatekeeper opens it offline. The DMG and
+its SHA-256 land in `.build/release-0.1.0/`. Open it on another account or
+Mac before publishing; `make publish VERSION=0.1.0` then tags the commit
+it was built from as `v0.1.0` and uploads both files to a GitHub release.
+
+Notarization reads its credentials from a keychain profile, set up once
+with an app-specific password from appleid.apple.com:
+
+```sh
+xcrun notarytool store-credentials spacekeys --apple-id <Apple ID> --team-id <TEAMID>
+```
+
+Another profile name goes in `local.mk` as `NOTARY_PROFILE`. If Apple
+rejects a submission, `xcrun notarytool log <submission ID> --keychain-profile
+spacekeys` says why.
+
+Builds made with `make install` report version 0.0.0.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
