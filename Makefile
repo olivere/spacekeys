@@ -12,7 +12,7 @@ IDENTITY ?= -
 # the deployment target there instead, so the linker gets both explicitly.
 # MACOS_MIN must match platforms in Package.swift and LSMinimumSystemVersion.
 MACOS_MIN := 15.0
-SDK_VERSION := $(shell xcrun --sdk macosx --show-sdk-version)
+SDK_VERSION = $(shell xcrun --sdk macosx --show-sdk-version)
 
 build:
 	swift build -c release \
